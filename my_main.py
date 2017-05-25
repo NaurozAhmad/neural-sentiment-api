@@ -8,14 +8,14 @@ import util.dataprocessor
 import models.sentiment
 import util.vocabmapping
 import ConfigParser
-from flask import Flask, request
+from flask import Flask, request, Response
+import json
 
 app = Flask(__name__)
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS
-flags.DEFINE_string('checkpoint_dir', 'data/checkpoints/',
-                    'Directory to store/restore checkpoints')
+flags.DEFINE_string('checkpoint_dir', 'data/checkpoints/', 'Directory to store/restore checkpoints')
 flags.DEFINE_string('text', 'Hello World!', 'Text to sample with.')
 flags.DEFINE_string('config_file', 'config.ini', 'Path to configuration file.')
 
@@ -50,7 +50,9 @@ def prepare_text(text, max_seq_length, vocab_mapping):
 
 def load_model(session, vocab_size):
     """Load trained model."""
+    print vocab_size
     hyper_params = read_config_file()
+    print hyper_params
     model = models.sentiment.SentimentModel(vocab_size,
                                             hyper_params["hidden_size"],
                                             1.0,
@@ -141,6 +143,13 @@ def analyze():
     else:
         message = message + 'negative'
     message = message + ' with probability: ' + str(probability)
-    return message
+    result = json.dumps({
+        'score': str(score),
+        'probability': str(probability)
+    })
+
+    resp = Response(response=result, status=200, mimetype='application/json')
+
+    return resp
 
 app.run(host='0.0.0.0')
